@@ -239,9 +239,25 @@ function photo_wall_shortcode($atts) {
         // Récupérer les données
         $mode = esc_html($row->mode); // Mode choisi (modern/classic)
         $image_urls = explode(',', $row->image); // Convertir les URLs des images en tableau
-
-        $output .= '<div class="photo-wall-gallery ' . $mode . '">'; // Début du conteneur
-
+        if($mode == "classic"){
+            $output .= '<div class="photo-wall-gallery ' . $mode . '">'; // Début du conteneur
+            $increment_class = 0;
+                foreach ($image_urls as $url) {
+                    $increment_class++;
+                    $url = trim($url); // Supprimer les espaces inutiles
+                    if($increment_class > 4){
+                        if (!empty($url)) {
+                            $output .= '<div class="transparent-block lower_photo"><img class="increment_class_'.$increment_class.'" src="' . esc_url($url) . '" alt="Photo"></div>';
+                        }
+                    }else{
+                        if (!empty($url)) {
+                            $output .= '<div class="transparent-block top_photo"><img class="increment_class_'.$increment_class.'" src="' . esc_url($url) . '" alt="Photo"></div>';
+                        }
+                    }
+                }
+                $output .= '</div>'; // Fin de la galerie
+        }else{
+            $output .= '<div class="photo-wall-gallery ' . $mode . '">'; // Début du conteneur
             foreach ($image_urls as $url) {
                 $url = trim($url); // Supprimer les espaces inutiles
                 if (!empty($url)) {
@@ -249,6 +265,7 @@ function photo_wall_shortcode($atts) {
                 }
             }
             $output .= '</div>'; // Fin de la galerie
+        }
         $output .= '</div>'; // Fin du conteneur
     }
 
