@@ -34,3 +34,14 @@
     font-size: 14px;
     color: #333;
 }
+
+.classic{
+    display: grid;
+    border: 2px solid green;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+.classic img{
+    height: 50px;
+    border: 2px solid yellow;
+}

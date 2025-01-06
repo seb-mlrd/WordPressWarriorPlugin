@@ -7,10 +7,10 @@ Author: Sébastien Maillard
 */
 
 // Chargement des scripts et styles
-// function photo_wall_enqueue_assets() {
-//     wp_enqueue_style('photo-wall-style', plugin_dir_url(__FILE__) . 'css/photo-wall.css');
-//     // wp_enqueue_script('photo-wall-script', plugin_dir_url(__FILE__) . 'js/photo-wall.js', array('jquery'), '1.0', true);
-// }
+function photo_wall_enqueue_assets() {
+    wp_enqueue_style('photo-wall-style', plugin_dir_url(__FILE__) . 'css/photo-wall.css');
+}
+add_action('wp_enqueue_scripts', 'photo_wall_enqueue_assets');
 
 
 if (!defined('ABSPATH')) {
@@ -202,65 +202,6 @@ function photo_wall_admin_page() {
 
 
 
-
-
-
-
-
-// // Shortcode pour afficher le mur de photos
-// function photo_wall_shortcode($atts) {
-//     $results = $wpdb->get_results("SELECT 'image' FROM $table_name WHERE id = $atts['id']");
-    
-//     $atts = shortcode_atts(array(
-//         'images' => $results,
-//         'id' => '',
-
-//     ), $atts);
-    
-//     foreach ($id as $row) {
-//         echo "<div style='border: 3px solid black; margin-bottom: 10px;'";
-//         echo '<h3>Mode sélectionné : ' . esc_html($row->mode) . '</h3>';
-//         echo '<h4>Id du Photo wall :' . esc_html($row->id) . '</h4>';
-//         // Récupérer les IDs des images et les convertir en tableau
-//         $image_ids = explode(',', $row->image);
-//         echo '<div class="photo-wall-gallery">';
-//         foreach ($image_ids as $id) {
-//         if($id != ""){
-//             echo '<img src="' . esc_html($id) . '" alt="Photo" style="max-width: 100px; max-height: 100px;">';
-//         }
-//         }
-//         // foreach ($row as $id) {
-//         //     echo wp_get_attachment_image($id, 'thumbnail');
-//         // }
-//             echo '</div>';
-//         echo '</div>';
-//     }
-//     if (empty($atts['images'])) {
-//         return '<p>Aucune image fournie.</p>';
-//     }
-
-//     $images = explode(',', $atts['images']);
-//     $output = '<div class="photo-wall">';
-//     if($typePhotoWall == 'modern'){
-//         foreach ($images as $image) {
-//             $output .= '<div class="photo-wall-item">';
-//             $output .= '<img src="' . esc_url(trim($image)) . '" alt="Photo" />';
-//             $output .= '</div>';
-//         }
-//     }else{
-//         foreach ($images as $image) {
-//             $output .= '<div class="photo-wall-item">';
-//             $output .= '<img src="' . esc_url(trim($image)) . '" alt="Photo" />';
-//             $output .= '</div>';
-//         }
-//     }
-
-//     $output .= '</div>';
-//     return $output;
-// }
-// add_shortcode('photo_wall', 'photo_wall_shortcode');
-
-
 function photo_wall_shortcode($atts) {
     global $wpdb;
 
@@ -299,27 +240,16 @@ function photo_wall_shortcode($atts) {
         $mode = esc_html($row->mode); // Mode choisi (modern/classic)
         $image_urls = explode(',', $row->image); // Convertir les URLs des images en tableau
 
-        if($mode == 'modern'){
-        $output .= '<div class="photo-wall-gallery" style="display: flex; gap: 10px; flex-wrap: wrap;">';
-        foreach ($image_urls as $url) {
-            $url = trim($url); // Supprimer les espaces inutiles
-            if (!empty($url)) {
-                $output .= '<img src="' . esc_url($url) . '" alt="Photo" style="max-width: 100px; max-height: 100px; margin-right: 10px;">';
-            }
-        }
-        $output .= '</div>'; // Fin de la galerie
-        $output .= '</div>'; // Fin du conteneur
-        }else{
-            $output .= '<div class="photo-wall-gallery" style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        $output .= '<div class="photo-wall-gallery ' . $mode . '">'; // Début du conteneur
+
             foreach ($image_urls as $url) {
                 $url = trim($url); // Supprimer les espaces inutiles
                 if (!empty($url)) {
-                    $output .= '<img src="' . esc_url($url) . '" alt="Photo" style="max-width: 100px; max-height: 100px; margin-right: 10px;">';
+                    $output .= '<img src="' . esc_url($url) . '" alt="Photo">';
                 }
             }
             $output .= '</div>'; // Fin de la galerie
-            $output .= '</div>'; // Fin du conteneur
-        }
+        $output .= '</div>'; // Fin du conteneur
     }
 
     return $output; // Retourner le HTML pour affichage
