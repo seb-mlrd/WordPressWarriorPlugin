@@ -6,82 +6,183 @@ Version: 1.0
 Author: Sébastien Maillard
 */
 
+// Chargement des scripts et styles
+// function photo_wall_enqueue_assets() {
+//     wp_enqueue_style('photo-wall-style', plugin_dir_url(__FILE__) . 'css/photo-wall.css');
+//     // wp_enqueue_script('photo-wall-script', plugin_dir_url(__FILE__) . 'js/photo-wall.js', array('jquery'), '1.0', true);
+// }
+
+
 if (!defined('ABSPATH')) {
-    exit; // Empêche l'accès direct
+    exit; // Empêche l'accès direct au fichier
 }
 
-function mon_plugin_photo_wall_page(){
-    add_options_page(
-        'Photo Wall',
-        'Photo Wall',
-        'manage_options',
-        'photo-wall',
-        'mon_plugin_photo_wall_config'
+// **1. Fonction pour charger les scripts et styles**
+add_action('admin_enqueue_scripts', 'photo_wall_admin_scripts');
+function photo_wall_admin_scripts($hook) {
+    // Chargez les scripts uniquement sur la page de votre plugin
+    if ($hook !== 'toplevel_page_photo-wall') {
+        return;
+    }
+
+    // Inclure la médiathèque WordPress
+    wp_enqueue_media();
+
+    // Inclure le fichier JavaScript
+    wp_enqueue_script(
+        'photo-wall-script', // Identifiant unique
+        plugin_dir_url(__FILE__) . 'js/photo-wall.js', // Chemin vers le JS
+        ['media-editor', 'media-views'], // Dépendances WordPress
+        '1.0',
+        true // Charger dans le footer
     );
 }
-add_action('admin_menu', 'mon_plugin_photo_wall_page');
 
+// **2. Fonction pour créer le menu d'administration**
+function photo_wall_admin_menu() {
+    add_menu_page(
+        'Photo Wall', // Titre de la page
+        'Photo Wall', // Nom du menu
+        'manage_options', // Autorisation requise
+        'photo-wall', // Slug unique
+        'photo_wall_admin_page', // Fonction de callback pour le contenu
+        'dashicons-format-gallery', // Icône
+        20 // Position dans le menu
+    );
+}
+add_action('admin_menu', 'photo_wall_admin_menu');
 
-function mon_plugin_photo_wall_config(){
+// **3. Contenu de la page d'administration**
+function photo_wall_admin_page() {
+    // Récupérez les images sauvegardées (sous forme d'IDs séparés par des virgules)
+    $images = isset($_POST['photo_wall_images']) ? esc_attr($_POST['photo_wall_images']) : '';
 
-    if (!current_user_can('manage_options')) {
-        wp_die(__('Vous n\'avez pas les droits nécessaires pour accéder à cette page.'));
-    }
-    extract($_POST);
-    if (isset($_FILES['image'])) {
-        $file = $_FILES['image'];
-        $file_name = $file['name'];
-        $file_tmp_name = $file['tmp_name'];
-        $file_type = $file['type'];
+    // Si le formulaire est soumis, sauvegardez les données
+    if (isset($_POST['valider'])) {
+        // $typePhotoWall = $_POST["photoWallChoice"];
 
+        global $wpdb;
 
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!in_array($file_type, $allowed_types)) {
-            echo "Seules les images JPEG, PNG, GIF et WebP sont autorisées.";
-            exit;
+        // Récupérer les données du formulaire
+        $image_ids = isset($_POST['photo_wall_images']) ? sanitize_text_field($_POST['photo_wall_images']) : '';
+
+        $table_image_url = "";
+        $image_table = explode(",", $image_ids);
+        foreach($image_table as $image){
+            $image_url = wp_get_attachment_url($image);
+            $table_image_url .= $image_url . ",";
         }
-        $date = new DateTime();
-        $mounth = $date->format('m');
-        $year = $date->format('Y');
-        $upload_dir = wp_upload_dir();
-        $upload_path = $upload_dir['basedir'] . '/' . $year . '/' . $mounth . '/';
-
-        $file_name_unique = wp_unique_filename($upload_path, $file_name);
-
-
-        if (move_uploaded_file($file_tmp_name, $upload_path . '/' . $file_name_unique)) {
-            $attachment = array(
-                'guid' => $upload_dir['url'] . '/' . $file_name_unique,
-                'post_mime_type' => $file_type,
-                'post_title' => sanitize_file_name($file_name),
-                'post_content' => '',
-                'post_status' => 'inherit'
+        echo $table_image_url;
+        $mode = isset($_POST['photoWallChoice']) ? sanitize_text_field($_POST['photoWallChoice']) : 'classic';
+    
+        // Vérifiez que les données sont valides avant d'insérer
+        if (!empty($image_ids) && !empty($mode)) {
+            $table_name = $wpdb->prefix . 'photo_wall';
+            // Insérer les données dans la table
+            $wpdb->insert(
+                $table_name,
+                [
+                    'image' => $table_image_url, // IDs des images (séparés par des virgules)
+                    'mode' => $mode,           // Mode choisi (modern/classic)
+                ],
+                [
+                    '%s', // Format de `image` (chaîne)
+                    '%s', // Format de `mode` (chaîne)
+                ]
             );
-            
-            $attachment_id = wp_insert_attachment($attachment, $upload_dir['path'] . '/' . $file_name_unique);
-
-            require_once(ABSPATH . 'wp-admin/includes/image.php');
-            $attachment_metadata = wp_generate_attachment_metadata($attachment_id, $upload_dir['path'] . '/' . $file_name_unique);
-            wp_update_attachment_metadata($attachment_id, $attachment_metadata);
-
-            echo "Fichier téléchargé avec succès : " . $file_name_unique;
+    
+            // Message de confirmation
+            echo '<div class="updated"><p>Les images et le mode ont été enregistrés dans la base de données.</p></div>';
         } else {
-            echo "Erreur lors du téléchargement de l'image.";
+            echo '<div class="error"><p>Veuillez sélectionner des images et un mode.</p></div>';
         }
+    
+        update_option('photo_wall_images', $images);
+        echo '<div class="updated"><p>Mur de photos mis à jour.</p></div>';
     }
 
-    $images = get_option('mon_plugin_photo_wall_options', '');
+    // Récupération des images enregistrées
+    $images = get_option('photo_wall_images', '');
     ?>
     <div class="wrap">
-        <h1>Photo Wall</h1>
-        <form method="post" action="" enctype="multipart/form-data">
-            <label for="photo_wall_images">Images :</label><br>
-            <input type="hidden" name="MAX_FILE_SIZE" value="30000000"/>
-            <input type="file" id="image" name="image" style="width: 100%; height: 200px;"/>
-            <p>Entrez les URL des images à afficher</p>
-            <p><input id="btnImage" type="submit" name="btnImage" value="Enregistrer" class="button button-primary"></p>
+        <h1>Configurer le Photo Wall</h1>
+        <form action="" method="post">
+            <!-- Champ pour choisir le mode -->
+            <legend>Choisi un putain de mode:</legend>
+            <input type="radio" name="photoWallChoice" value="modern" id="modern" checked>
+            <label for="modern">Modern</label>
+
+            <input type="radio" name="photoWallChoice"  value="classic" id="classic">
+            <label for="classic">Classic</label>
+
+            <!-- Champ caché pour stocker les IDs des images -->
+            <input type="hidden" name="photo_wall_images" id="photo_wall_images" value="<?php echo esc_attr($images); ?>">
+
+            <!-- Bouton pour ouvrir la médiathèque -->
+            <button type="button" class="button" id="select-images-button">Choisir des images</button>
+            <p>
+                <input type="submit" name="valider" class="button-primary" value="Enregistrer">
+            </p>
+            <!-- Conteneur pour prévisualiser les images -->
+
+            <!-- ************* -->
+            <div id="selected-images" style="margin-top: 15px;">
+                <?php
+                if (!empty($images)) {
+                    // $image_ids = explode(',', $images);
+                    // $all_image_url =  "";
+                    // echo '<table style="width:100%; border: 1px solid #ccc; border-collapse: collapse;">';
+                    // echo '<tr><th>Image</th><th>Actions</th></tr>';  // En-têtes du tableau
+                    // foreach ($image_ids as $id) {
+                        // $image_url = wp_get_attachment_url($id); // Récupère l'URL de l'image
+                        // $all_image_url .= $image_url . ',';
+                        // $array_url = [$image_url];
+                        // $image_thumb = wp_get_attachment_image_src($id, 'thumbnail'); // Miniature de l'image
+                        // echo '<tr>';
+                        // echo '<td><img src="' . esc_url($image_thumb[0]) . '" alt="" style="max-width: 100px; max-height: 100px;"></td>';
+                        
+                        // echo '<td><button class="remove-image-button" data-id="' . esc_attr($id) . '">Supprimer</button></td>';
+                        // echo '</tr>';
+                    // }
+                    // echo '</table>';
+                }
+                global $wpdb;
+                // Récupérez toutes les entrées de la table
+                $table_name = $wpdb->prefix . 'photo_wall';
+                $results = $wpdb->get_results("SELECT * FROM $table_name");
+                // var_dump($results);
+                if (!empty($results)) {
+                    echo '<h2>Murs de photos enregistrés</h2>';
+                    ?>
+                    <div>
+                    <?php
+                    foreach ($results as $row) {
+                        echo "<div style='border: 3px solid black; margin-bottom: 10px;'";
+                        echo '<h3>Mode sélectionné : ' . esc_html($row->mode) . '</h3>';
+                        echo '<h4>Id du Photo wall :' . esc_html($row->id) . '</h4>';
+                        // Récupérer les IDs des images et les convertir en tableau
+                        $image_ids = explode(',', $row->image);
+                        echo '<div class="photo-wall-gallery">';
+                        foreach ($image_ids as $id) {
+                           if($id != ""){
+                            echo '<img src="' . esc_html($id) . '" alt="Photo" style="max-width: 100px; max-height: 100px;">';
+                           }
+                        }
+                        // foreach ($row as $id) {
+                        //     echo wp_get_attachment_image($id, 'thumbnail');
+                        // }
+                            echo '</div>';
+                        echo '</div>';
+                    }
+                    
+                } else {
+                    echo '<p>Aucun mur de photos enregistré.</p>';
+                }
+                ?>
+                </div>
+            </div>
         </form>
-        <h2>Formation photo-waaaalllllll</h2>
+
         
     </div>
     <?php
@@ -89,52 +190,139 @@ function mon_plugin_photo_wall_config(){
 
 
 
-function mon_plugin_photo_wall($content){
-    $images = get_option('mon_plugin_photo_wall_options', '');
-    if (!empty($images)) {
-        $content .= '<div class="photo-wall">';
-        $images = explode("\n", $images);
-        foreach ($images as $image) {
-            $content .= '<div class="photo-wall-item">';
-            $content .= '<img src="' . esc_url(trim($image)) . '" alt="Photo" />';
-            $content .= '</div>';
-        }
-        $content .= '</div>';
-    }
-    return $content;
-}
-add_filter('the_content', 'mon_plugin_photo_wall');
 
 
 
 
-// Chargement des scripts et styles
-function photo_wall_enqueue_assets() {
-    wp_enqueue_style('photo-wall-style', plugin_dir_url(__FILE__) . 'css/photo-wall.css');
-    wp_enqueue_script('photo-wall-script', plugin_dir_url(__FILE__) . 'js/photo-wall.js', array('jquery'), '1.0', true);
-}
-add_action('wp_enqueue_scripts', 'photo_wall_enqueue_assets');
 
-// Shortcode pour afficher le mur de photos
+
+
+
+
+
+
+
+
+
+
+
+
+// // Shortcode pour afficher le mur de photos
+// function photo_wall_shortcode($atts) {
+//     $results = $wpdb->get_results("SELECT 'image' FROM $table_name WHERE id = $atts['id']");
+    
+//     $atts = shortcode_atts(array(
+//         'images' => $results,
+//         'id' => '',
+
+//     ), $atts);
+    
+//     foreach ($id as $row) {
+//         echo "<div style='border: 3px solid black; margin-bottom: 10px;'";
+//         echo '<h3>Mode sélectionné : ' . esc_html($row->mode) . '</h3>';
+//         echo '<h4>Id du Photo wall :' . esc_html($row->id) . '</h4>';
+//         // Récupérer les IDs des images et les convertir en tableau
+//         $image_ids = explode(',', $row->image);
+//         echo '<div class="photo-wall-gallery">';
+//         foreach ($image_ids as $id) {
+//         if($id != ""){
+//             echo '<img src="' . esc_html($id) . '" alt="Photo" style="max-width: 100px; max-height: 100px;">';
+//         }
+//         }
+//         // foreach ($row as $id) {
+//         //     echo wp_get_attachment_image($id, 'thumbnail');
+//         // }
+//             echo '</div>';
+//         echo '</div>';
+//     }
+//     if (empty($atts['images'])) {
+//         return '<p>Aucune image fournie.</p>';
+//     }
+
+//     $images = explode(',', $atts['images']);
+//     $output = '<div class="photo-wall">';
+//     if($typePhotoWall == 'modern'){
+//         foreach ($images as $image) {
+//             $output .= '<div class="photo-wall-item">';
+//             $output .= '<img src="' . esc_url(trim($image)) . '" alt="Photo" />';
+//             $output .= '</div>';
+//         }
+//     }else{
+//         foreach ($images as $image) {
+//             $output .= '<div class="photo-wall-item">';
+//             $output .= '<img src="' . esc_url(trim($image)) . '" alt="Photo" />';
+//             $output .= '</div>';
+//         }
+//     }
+
+//     $output .= '</div>';
+//     return $output;
+// }
+// add_shortcode('photo_wall', 'photo_wall_shortcode');
+
+
 function photo_wall_shortcode($atts) {
-    $atts = shortcode_atts(array(
-        'images' => "http://localhost:8888/wordpress/wp-content/uploads/2024/12/dandadan-scaled.jpg,http://localhost:8888/wordpress/wp-content/uploads/2024/12/miles-morales-2-scaled.jpg,http://localhost:8888/wordpress/wp-content/uploads/2024/12/cowboy-bebop-scaled.jpg,http://localhost:8888/wordpress/wp-content/uploads/2024/12/chateau-ambulant-scaled.jpg,http://localhost:8888/wordpress/wp-content/uploads/2024/12/fma-scaled.jpg,http://localhost:8888/wordpress/wp-content/uploads/2024/12/your-name.jpg", 
-    ), $atts);
+    global $wpdb;
 
-    if (empty($atts['images'])) {
-        return '<p>Aucune image fournie.</p>';
+    // Nom de la table
+    $table_name = $wpdb->prefix . 'photo_wall';
+
+    // Vérification et traitement des attributs du shortcode
+    $atts = shortcode_atts(
+        array(
+            'id' => '', // L'ID du photo wall
+        ),
+        $atts
+    );
+
+    // Vérifier si un ID est fourni
+    $photo_wall_id = intval($atts['id']);
+    if (!$photo_wall_id) {
+        return '<p>Veuillez spécifier un ID valide pour le Photo Wall.</p>';
     }
 
-    $images = explode(',', $atts['images']);
-    $output = '<div class="photo-wall">';
+    // Requête pour récupérer les informations du Photo Wall dans la base de données
+    $results = $wpdb->get_results(
+        $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $photo_wall_id)
+    );
 
-    foreach ($images as $image) {
-        $output .= '<div class="photo-wall-item">';
-        $output .= '<img src="' . esc_url(trim($image)) . '" alt="Photo" />';
-        $output .= '</div>';
+    // Vérifier si un résultat existe
+    if (empty($results)) {
+        return '<p>Aucun Photo Wall trouvé pour cet ID.</p>';
     }
 
-    $output .= '</div>';
-    return $output;
+    // Construire la sortie HTML
+    $output = '';
+
+    foreach ($results as $row) {
+        // Récupérer les données
+        $mode = esc_html($row->mode); // Mode choisi (modern/classic)
+        $image_urls = explode(',', $row->image); // Convertir les URLs des images en tableau
+
+        if($mode == 'modern'){
+        $output .= '<div class="photo-wall-gallery" style="display: flex; gap: 10px; flex-wrap: wrap;">';
+        foreach ($image_urls as $url) {
+            $url = trim($url); // Supprimer les espaces inutiles
+            if (!empty($url)) {
+                $output .= '<img src="' . esc_url($url) . '" alt="Photo" style="max-width: 100px; max-height: 100px; margin-right: 10px;">';
+            }
+        }
+        $output .= '</div>'; // Fin de la galerie
+        $output .= '</div>'; // Fin du conteneur
+        }else{
+            $output .= '<div class="photo-wall-gallery" style="display: flex; gap: 10px; flex-wrap: wrap;">';
+            foreach ($image_urls as $url) {
+                $url = trim($url); // Supprimer les espaces inutiles
+                if (!empty($url)) {
+                    $output .= '<img src="' . esc_url($url) . '" alt="Photo" style="max-width: 100px; max-height: 100px; margin-right: 10px;">';
+                }
+            }
+            $output .= '</div>'; // Fin de la galerie
+            $output .= '</div>'; // Fin du conteneur
+        }
+    }
+
+    return $output; // Retourner le HTML pour affichage
 }
+
 add_shortcode('photo_wall', 'photo_wall_shortcode');
