@@ -258,11 +258,37 @@ function photo_wall_shortcode($atts) {
                 $output .= '</div>'; // Fin de la galerie
         }else{
             $output .= '<div class="photo-wall-gallery ' . $mode . '">'; // Début du conteneur
+            $increment_class_modern = 0;
             foreach ($image_urls as $url) {
+                $increment_class_modern++;
                 $url = trim($url); // Supprimer les espaces inutiles
-                if (!empty($url)) {
-                    $output .= '<img src="' . esc_url($url) . '" alt="Photo">';
+                switch($increment_class_modern){
+                    case 1:
+                        $output .= '<div class="col-modern-1"><div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div>';
+                        break;
+                    case 2:
+                        $output .= '<div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div></div>';
+                        break;
+                    case 3:
+                        $output .= '<div class="col-modern-2"><div class="solo-modern-case"><div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div></div>';
+                        break;
+                    case 4:
+                        $output .= '<div class="little-modern-case"><div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div>';
+                        break;
+                    case 5:
+                        $output .= '<div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div></div></div>';
+                        break;
+                    case 6:
+                        $output .= '<div class="col-modern-3"><div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div>';
+                        break;
+                    case 7: 
+                        $output .= '<div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div></div>';
+                        break;
+                    default:
+                        $output .= '<div></div>';
+                        break;
                 }
+                // $output .= '<div class="transparent-block-modern"><img class="increment_class_modern_'.$increment_class_modern.'" src="' . esc_url($url) . '" alt="Photo"></div>';
             }
             $output .= '</div>'; // Fin de la galerie
         }

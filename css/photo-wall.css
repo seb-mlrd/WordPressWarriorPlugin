@@ -1,3 +1,4 @@
+/* CLASSIC */
 .photo-wall {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
@@ -89,5 +90,118 @@
     .lower_photo{
         position: relative;
         right: 50%;
+    }
+}
+
+/* MODERN */
+.transparent-block-modern{
+    background: transparent;
+    max-width: 50vw;
+    /* max-height: 30vh; */
+    border-radius: 5%;
+    overflow: hidden;
+    display: grid;
+    justify-content: center;
+}
+.modern{
+    border: 2px solid yellow;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: 105vh;
+}
+.modern div img{
+    /* max-width: 280px; */
+    border-radius: 5%;
+    max-height: 105vh;
+    border: 10px solid black;
+    /* min-height: 350px; */
+}
+.increment_class_modern_2{
+    position: relative;
+    z-index: 1;
+    height: 25%;
+    width: auto;
+    right: 8vw;
+}
+.col-modern-1{
+    display: grid;
+    gap: 0px;
+    grid-template-rows: 3fr 1fr;
+    height: 105vh;
+}
+
+.col-modern-2{
+    display: grid;
+    gap: 0px;
+    grid-template-rows: 1fr 0fr;
+    height: 105vh;
+    position: relative;
+}
+.litte-modern-case{
+    border: 10px solid red;
+    position: absolute;
+}
+.increment_class_modern_3{
+    position: relative;
+    z-index: 1;
+    width: 50vw;
+    height: 105vh;
+
+}
+.increment_class_modern_4{
+    position: absolute;
+    z-index: 5;
+    bottom: 0px;
+    right: 54%;
+    width: 25vw;
+    height: 25vw;
+}
+.increment_class_modern_5{
+    position: absolute;
+    z-index: 3;
+    bottom: 0;
+    right: 54%;
+    width: 40vw;
+    height: 40vw;
+}
+.col-modern-3{
+    display: grid;
+    gap: 0px;
+    grid-template-rows: 6fr 4fr;
+    height: 105vh;
+    position: relative;
+}
+.increment_class_modern_6{
+    height: 60%;
+}
+.increment_class_modern_7{
+    height: 40%;
+}
+@media screen and (max-width: 768px){
+    .modern{
+        grid-template-columns: 1fr;
+        height: auto;
+        justify-content: center;
+    }
+    .modern div{
+        margin: auto;
+    }
+    .modern div img{
+        width: 280px;
+        height: 350px;
+    }
+    .litte-modern-case{
+        border: 10px solid red;
+        position: relative;
+    }
+    .increment_class_modern_4{
+        position: relative;
+    }
+    .increment_class_modern_5{
+        position: relative;
+    }
+    .litte-modern-case{
+        display: grid;
+        grid-template-rows: 1fr 1fr;
     }
 }
